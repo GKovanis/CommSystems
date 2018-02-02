@@ -1,0 +1,43 @@
+clear all; close all;
+order=256;
+load sima_lp;
+s=sima_lp;
+Fc=5000;
+F1=fc (1)/Fs; F2=1.02*fc (1)/Fs; F3=0.98*fc (2)/Fs; F4=fc (2)/Fs;
+fpts=[0 F1 F2 F3 F4 0.5]*2;
+mag=[0 0 1 1 0 0];
+wt=[1 1 1];
+b=firpm(order/8,fpts,mag,wt);
+a=1;
+figure; freqz(b,a,512,Fs);
+s=conv(s,b,'same');
+t=([0:length(s)-1]*7/length(s))';
+figure; pwelch(s,[],[],[],Fs);
+
+s1=s;
+s2=imag(hilbert(s));
+Fs=2.2*Fs;
+ssb=sqrt(2)*(s1.*cos(2*pi*Fc*t)+s2.*sin(2*pi*Fc*t));
+figure; pwelch(ssb,[],[],[],Fs);
+
+clear z z1 z2;
+z=sqrt(2)*ssb.*cos(2*pi*Fc*t);
+Fs=Fs/2.2;
+figure; pwelch(z,[],[],[],Fs);
+
+z_lp=2*conv(z,b,'same');
+figure; pwelch(z_lp,[],[],[],Fs);
+figure;
+n=[150:200];
+t=[1:length(s)]';
+t1=t (n)/1000;
+subplot(2,1,1);plot(t1,s(n));
+maxs=max(s);mins=min(s);
+axis([min(t1) max(t1) mins*1.1 maxs*1.1]);
+title('Initial Signal');
+grid;
+subplot(2,1,2);plot(t1,z_lp(n));
+axis([min(t1) max(t1) mins*1.1 maxs*1.1]);
+xlabel('time (msec)');
+title('signal after demodulation');
+grid;

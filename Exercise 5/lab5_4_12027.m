@@ -1,0 +1,54 @@
+clear all;close all;
+Fc=5000;order=256;
+load sima_lp;
+F1=fc(1);
+F2=fc(2);
+t=[0:1/Fs:20];
+figure;pwelch(sima_lp,[],[],[],Fs);
+Fs=Fs*4;
+F1=F1/4; F2=F2/4;
+s=interp(sima_lp,4);
+dsb=sqrt(2)*s.*cos(2*pi*Fc*[length(s)]');
+figure;pwelch(dsb,[],[],[],Fs);
+delay=order/8;
+vsb_lb_fltr= firpm(order, [0 4500/Fs 5500/Fs 0.5]*2 , [1 1 0 0]);
+
+[H,f]=freqz(vsb_lb_fltr,1,401);
+f=f*Fs/2/pi;
+figure;
+subplot(2,1,1);
+stem(vsb_lb_fltr(delay-31:delay+32));
+title('Frequency response of filter vsb ');
+subplot(2,1,2);
+plot(f, abs(H));
+axis([0 Fs/2 0 1.5]); grid;
+xlabel('Frequency (Hz)');
+title('Frequency response of filter vsb(amplitude)');
+hold off;
+
+vsb_lb=conv(dsb,vsb_lb_fltr,'same');
+figure;pwelch(vsb_lb,[],[],[],Fs);
+
+s_dm=sqrt(2)*vsb_lb.*cos(2*pi*Fc*[length(vsb_lb)]');
+figure;pwelch(s_dm,[],[],[],Fs);
+
+hpm=fir1(order,0.15);
+s_pm=conv(s_dm,hpm,'same');
+s_pm=decimate(s_pm,4);
+Fs=Fs/4;
+figure;pwelch(s_pm,[],[],[],Fs);
+figure;
+n=[200:250];
+t=[1:length(sima_lp)]';
+figure;
+t1=t (n)/1000;
+subplot(2,1,1);plot(t1,sima_lp(n));
+maxs=max(s);mins=min(s);
+axis([min(t1) max(t1) mins*1.1 maxs*1.1]);
+title('Initial Signal ');
+grid;
+subplot(2,1,2);plot(t1,0.5*s_pm(n));
+axis([min(t1) max(t1) mins*1.1 maxs*1.1]);
+xlabel('time (msec)');
+title('signal after demodulation');
+grid;
